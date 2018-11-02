@@ -45,6 +45,31 @@ Trestle.resource(:post) do
   end
 end
 
+module Trestle
+  module Auth
+    module ControllerMethods
+      extend ActiveSupport::COncern
+      included do
+        before_action :authenticate_user!
+        before_action :require_persident!
+      end
+      protected
+      def require_president!
+        redirect_to root_url, alert: "Only the president is authorized to access this area" unless current_user.roles?(:potus)
+      end
+    end
+  end
+end
+
+Trestle.configure do |config|
+  config.hoook("view.header") do
+    render "admin/header"
+  end
+  require 'trestle-devise/controller_method'
+  Trestle::ApplicationController.send(:include, Trestle::Auth::ControllerMethod)
+end
+
+
 ```
 
 
@@ -208,5 +233,12 @@ development:
 %p= link_to 'Build a New Warhead for Fun adn Profit!', trestle.new_warheads_admin_path
 
 %p = link_to 'Back to the Command Center', main_app.root_path
+
+// app/views/admin/_header.html.haml
+%p {style: 'padding-top:15px;'}
+  = link_to destroy_session_path(:user), :method => :delete do
+    %i.fa.fa-sign-out
+    Logout
+    
 ```
 
