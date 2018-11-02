@@ -48,7 +48,7 @@ end
 ```
 
 
-```
+```ruby
 # config/initializers/trestle.rb
 
 config.before_action do |controller|
@@ -125,6 +125,64 @@ Trestle.resource(:missiles) do
   end
 end
 
+module CustomTrestleHelper
+  def custom_helper(options)
+    options = options.reverse_merge()
+    content_tag(:div, class: "panel panel-#{options[:state]}") do
+      concat(content_tag(:div, class: "panel-heading") { options[:heading] }) if options[:heading]
+      concat(content_tag(:div, class: "panel-body") { yield })
+      concat(content_tag(:div, class: "panel-footer") { options[:footer] }) if options[:footer]
+    end
+  end
+end
+
+Trestle.configure do |config|
+  config.helpers = [CustomTrestleHelper]
+end
+
+Trestle.resource(:launch_codes) do
+  form do |lauch_code|
+    concat(custom_helper({state: 'danger', heading: 'Top Secret'})) do
+      text_field :code
+      text_field :code_confirmation
+    end
+  end
+end
+
+Trestle.admin(:dashbord) do
+  menu do
+    item :dashboard, icon: "fa fa-tachometer"
+  end
+  controller do
+    def index
+      @missing_warhead_count = Warhead.missing.count
+    end
+  end
+end
+
+class MonetizeField < Trestle::Form::Field
+  def field
+    content_tag :div, class: 'input-group' do
+      safe_join [
+        content_tag(:span, bulder.object.send(name).currency.symbol, class: 'input-group')
+        builder.raw_text_field(name, {class: 'form-control'}),
+        bullder.raw_select("#{name}_currency", ['USD', 'GBP'], {}, {class: 'form-control', style: '-webkit-appearance:none;'})
+      ]
+    end
+  end
+end
+
+Trestle.configure do |config|
+  config.form_field :monetize, MonetizeField
+end
+
+Trestle.resource(:blackmails) do
+  from do |blackmail|
+    text_field :victim
+    text_field :dirt
+    monetize :price
+  end
+end
 
 ```
 
@@ -140,6 +198,15 @@ development:
 %h4 Numero de Articulos
 %p= @articles.count
 
+- content_for(:title, 'Dashboard')
+= render "header"
+.main-content-area
+  .main-content-container
+    .main-content
+      %h3= pluralize(@missing_warhead_count, 'Missing Warhead')
 
+%p= link_to 'Build a New Warhead for Fun adn Profit!', trestle.new_warheads_admin_path
+
+%p = link_to 'Back to the Command Center', main_app.root_path
 ```
 
