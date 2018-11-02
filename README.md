@@ -69,6 +69,27 @@ Trestle.configure do |config|
   Trestle::ApplicationController.send(:include, Trestle::Auth::ControllerMethod)
 end
 
+menu do
+  item :my_menu_item, icon: "fa fa-star", group: :my_group_name, priority: :first
+end
+
+menu do
+  group :group_name, priority: 100 do
+    item :resource, icon: "fa fa-star", priority: 1
+  end
+end
+
+column :name, sort: :name_column
+column :name, sort: { field: :name_column }
+
+column :name, sort: { default_order: :desc }
+
+column :created_at, sort: { default: true, default_order: :desc }
+
+sort_column(:name) do |colection, order|
+  collection.reorder("name_column #{order} NULLS LAST")
+end
+
 
 ```
 
